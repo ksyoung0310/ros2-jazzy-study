@@ -1,0 +1,305 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="my_bot">
+
+  <!-- [색상 팔레트] -->
+  <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+  <material name="dark_grey"><color rgba="0.2 0.2 0.2 1"/></material>
+  <material name="white"><color rgba="0.95 0.95 0.95 1"/></material>
+  <material name="yellow"><color rgba="1 0.75 0 1"/></material>
+  <material name="red"><color rgba="0.9 0.1 0.1 1"/></material>
+  <material name="silver"><color rgba="0.8 0.8 0.8 1"/></material>
+  <material name="gold"><color rgba="0.8 0.6 0.2 1"/></material>
+
+  <!-- 1. 기본 좌표계 (Base Link) -->
+  <link name="base_link"/>
+
+  <!-- 2. 하부 데크 (Chassis) -->
+  <joint name="chassis_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="chassis"/>
+    <origin xyz="0 0 0.04"/>
+  </joint>
+
+  <link name="chassis">
+    <visual>
+      <geometry><box size="0.25 0.16 0.01"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.25 0.16 0.05"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05"/>
+    </inertial>
+  </link>
+  <gazebo reference="chassis"><material>Gazebo/FlatBlack</material></gazebo>
+
+  <!-- 3. 상부 데크 (Top Deck) -->
+  <joint name="top_deck_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="top_deck"/>
+    <origin xyz="0 0 0.06"/>
+  </joint>
+
+  <link name="top_deck">
+    <visual>
+      <geometry><box size="0.25 0.16 0.005"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.25 0.16 0.005"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <gazebo reference="top_deck"><material>Gazebo/FlatBlack</material></gazebo>
+
+  <!-- 지지대 (Standoffs) -->
+  <xacro:macro name="standoff" params="x y">
+    <joint name="standoff_${x}_${y}" type="fixed">
+      <parent link="chassis"/>
+      <child link="pillar_${x}_${y}"/>
+      <origin xyz="${x} ${y} 0.03"/>
+    </joint>
+    <link name="pillar_${x}_${y}">
+      <visual>
+        <geometry><cylinder radius="0.003" length="0.06"/></geometry>
+        <material name="gold"/>
+      </visual>
+    </link>
+    <gazebo reference="pillar_${x}_${y}"><material>Gazebo/Gold</material></gazebo>
+  </xacro:macro>
+  <xacro:standoff x="0.11" y="0.07"/>
+  <xacro:standoff x="0.11" y="-0.07"/>
+  <xacro:standoff x="-0.11" y="0.07"/>
+  <xacro:standoff x="-0.11" y="-0.07"/>
+
+  <!-- 4. 하얀색 박스 (PC) -->
+  <joint name="box_joint" type="fixed">
+    <parent link="top_deck"/>
+    <child link="white_box"/>
+    <origin xyz="-0.02 0 0.035"/>
+  </joint>
+
+  <link name="white_box">
+    <visual>
+      <geometry><box size="0.12 0.10 0.07"/></geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.12 0.10 0.07"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+  </link>
+  <gazebo reference="white_box"><material>Gazebo/White</material></gazebo>
+
+  <!-- 5. 바퀴 (Mecanum Wheels) -->
+  <xacro:macro name="wheel" params="prefix x y">
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${prefix}_wheel"/>
+      <origin xyz="${x} ${y} 0.04" rpy="-1.5708 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <link name="${prefix}_wheel">
+      <visual>
+        <geometry><cylinder radius="0.04" length="0.035"/></geometry>
+        <material name="yellow"/>
+      </visual>
+      <collision>
+        <geometry><cylinder radius="0.04" length="0.035"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="0.4"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+    <gazebo reference="${prefix}_wheel"><material>Gazebo/Yellow</material></gazebo>
+  </xacro:macro>
+
+  <xacro:wheel prefix="front_left"  x="0.08"  y="0.105"/>
+  <xacro:wheel prefix="front_right" x="0.08"  y="-0.105"/>
+  <xacro:wheel prefix="rear_left"   x="-0.08" y="0.105"/>
+  <xacro:wheel prefix="rear_right"  x="-0.08" y="-0.105"/>
+
+  <!-- 6. 마스트 (Mast) -->
+  <joint name="mast_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="mast"/>
+    <origin xyz="0.14 0 0.10"/>
+  </joint>
+
+  <link name="mast">
+    <visual>
+      <geometry><box size="0.015 0.04 0.20"/></geometry>
+      <material name="silver"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.015 0.04 0.20"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.2"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <gazebo reference="mast"><material>Gazebo/Grey</material></gazebo>
+
+  <!-- 카메라 (Camera) -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="mast"/>
+    <child link="camera_link"/>
+    <origin xyz="0.01 0 0.10"/>
+  </joint>
+  <link name="camera_link">
+    <visual>
+      <geometry><box size="0.02 0.04 0.02"/></geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <!-- 7. 리프트 및 지게발 -->
+  <joint name="lift_joint" type="prismatic">
+    <parent link="mast"/>
+    <child link="lift_plate"/>
+    <origin xyz="0.02 0 -0.1"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="0.12" effort="500" velocity="0.2"/>
+  </joint>
+
+  <link name="lift_plate">
+    <visual>
+      <geometry><box size="0.01 0.10 0.06"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.01 0.10 0.06"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="fork_left_joint" type="fixed">
+    <parent link="lift_plate"/>
+    <child link="fork_left"/>
+    <origin xyz="0.08 0.035 -0.02"/>
+  </joint>
+  <link name="fork_left">
+    <visual>
+      <geometry><box size="0.16 0.015 0.005"/></geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.16 0.015 0.005"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="fork_right_joint" type="fixed">
+    <parent link="lift_plate"/>
+    <child link="fork_right"/>
+    <origin xyz="0.08 -0.035 -0.02"/>
+  </joint>
+  <link name="fork_right">
+    <visual>
+      <geometry><box size="0.16 0.015 0.005"/></geometry>
+      <material name="red"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.16 0.015 0.005"/></geometry>
+    </collision>
+  </link>
+
+  <!-- 9. 라이다 센서 (LiDAR) -->
+  <joint name="laser_joint" type="fixed">
+    <parent link="white_box"/>
+    <child link="laser_frame"/>
+    <origin xyz="0 0 0.06" rpy="0 0 0"/>
+  </joint>
+
+  <link name="laser_frame">
+    <visual>
+      <geometry><cylinder radius="0.035" length="0.02"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="0.035" length="0.02"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="laser_frame">
+    <sensor name="lidar" type="gpu_lidar">
+      <pose>0 0 0 0 0 0</pose>
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <update_rate>10</update_rate>
+      <topic>scan</topic>
+      <!-- <gz_frame_id>laser_frame</gz_frame_id> -->
+      <!-- <gz_frame_id>를 삭제하거나 아래와 같이 설정 -->
+      <ignition_frame_id>laser_frame</ignition_frame_id> 
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>500</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>10.0</max>
+          <resolution>0.015</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </ray>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+      <wheel_separation>0.21</wheel_separation>
+      <wheel_radius>0.04</wheel_radius>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>true</publish_wheel_tf>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher"/>
+  </gazebo>
+
+  <!-- 앞바퀴 마찰력 제거 설정 -->
+  <gazebo reference="front_left_wheel">
+    <mu1>0.01</mu1>
+    <mu2>0.01</mu2>
+  </gazebo>
+  <gazebo reference="front_right_wheel">
+    <mu1>0.01</mu1>
+    <mu2>0.01</mu2>
+  </gazebo>
+  
+</robot>
