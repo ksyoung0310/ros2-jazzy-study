@@ -8,10 +8,13 @@ import xacro
 
 def generate_launch_description():
     pkg_name = 'my_bot'
-    file_subpath = 'urdf/robot_urdf.xacro'
     
-    # 1. URDF 파일 변환
-    xacro_file = os.path.join(get_package_share_directory(pkg_name), file_subpath)
+    # 1. 경로 설정 수정
+    pkg_share = get_package_share_directory(pkg_name)
+    xacro_file = os.path.join(pkg_share, 'urdf', 'robot_urdf.xacro')
+    world_file = os.path.join(pkg_share, 'worlds', 'warehouse.sdf') # 월드 파일 경로
+
+    # URDF 변환
     robot_description_raw = xacro.process_file(xacro_file).toxml()
 
     # 2. Gazebo 실행
@@ -19,14 +22,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items()
+        # gz_args에 world_file 경로를 전달합니다.
+        launch_arguments={'gz_args': f'-r {world_file}'}.items()
     )
 
     # 3. 로봇 소환
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
-        arguments=['-topic', 'robot_description', '-name', 'my_bot', '-z', '0.1'],
+        arguments=['-topic', 'robot_description', '-name', 'my_bot', '-z', '0.5'],
         output='screen'
     )
 
@@ -49,7 +53,7 @@ def generate_launch_description():
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             # gz topic -l 에서 확인된 실제 경로 사용
             '/world/empty/model/my_bot/joint_state@sensor_msgs/msg/JointState[gz.msgs.Model',
-            '/model/my_bot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V'
+            '/model/my_bot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
         ],
         remappings=[
             ('/world/empty/model/my_bot/joint_state', '/joint_states'),
@@ -72,19 +76,8 @@ def generate_launch_description():
             'map_frame': 'map',
             'scan_topic': '/scan',
             'mode': 'mapping',
-            
-            # [추가] 센서 데이터 대기 시간 및 처리 설정
-            'transform_timeout': 0.5,        # TF 대기 시간 연장
-            'minimum_time_interval': 0.1,
-            'lookup_transform_timeout': 0.2,
-            'tf_buffer_duration': 30.0,
-            
-            # [추가] 지도 업데이트 주기 설정
+            'transform_timeout': 0.5,
             'map_update_interval': 1.0,
-            'transform_publish_period': 0.05, # map->odom 좌표계를 20Hz로 발행
-            
-            # [중요] QoS 설정 (Gazebo 스캔 데이터를 잘 받기 위해)
-            'scan_queue_size': 10,
         }]
     )
 
@@ -117,12 +110,17 @@ def generate_launch_description():
         actions=[spawn_entity]
     )
 
+    delayed_lifecycle_manager = TimerAction(
+        period=2.0, 
+        actions=[node_lifecycle_manager]
+    )
+
     return LaunchDescription([
         gazebo,
         node_robot_state_publisher,
         bridge,
         slam_toolbox,
         node_static_tf_lidar,
-        node_lifecycle_manager,
+        delayed_lifecycle_manager, # 지연 실행 적용
         delayed_spawn_entity
     ])

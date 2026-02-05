@@ -245,9 +245,7 @@
       <visualize>true</visualize>
       <update_rate>10</update_rate>
       <topic>scan</topic>
-      <!-- <gz_frame_id>laser_frame</gz_frame_id> -->
-      <!-- <gz_frame_id>를 삭제하거나 아래와 같이 설정 -->
-      <ignition_frame_id>laser_frame</ignition_frame_id> 
+      <frame_id>laser_frame</frame_id>
       <ray>
         <scan>
           <horizontal>
